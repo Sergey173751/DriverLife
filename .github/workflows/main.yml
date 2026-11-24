@@ -1,0 +1,43 @@
+name: Build DriverLife (Windows x64)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Download source
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -S . -B build -A x64
+
+      - name: Build DriverLife
+        run: cmake --build build --config Release
+
+      - name: Prepare package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package
+          Copy-Item build/Release/* package/ -Recurse -Force
+          Copy-Item DriverLife.ini package/ -ErrorAction SilentlyContinue
+          Copy-Item README.md package/ -ErrorAction SilentlyContinue
+          Copy-Item Инструкция.txt package/ -ErrorAction SilentlyContinue
+          if (Test-Path включить) {
+            Copy-Item включить package/включить -Recurse -Force
+          }
+
+      - name: Create ZIP archive
+        run: |
+          Compress-Archive -Path package/* -DestinationPath ETS2_Driver_Life_0.5-windows-x64.zip
+
+      - name: Upload ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ETS2_Driver_Life_0.5-windows-x64
+          path: ETS2_Driver_Life_0.5-windows-x64.zip
